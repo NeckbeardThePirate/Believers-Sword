@@ -5,6 +5,7 @@ import SESSION from '../util/session';
 export default defineStore('useRightSideStore', () => {
     const keyStorage = 'storageRightSideSplitPaneSizes';
     const showBottomPane = ref(false);
+    const showRightPanel = ref(true);
     const lastSelectedBottomMenu = ref<string | null>(null);
     const rightSidePaneSplitStartUpValue = ref<Array<{ min: number; max: number; size: number }>>([
         { min: 20, max: 80, size: 50 },
@@ -23,14 +24,16 @@ export default defineStore('useRightSideStore', () => {
     onBeforeMount(() => {
         const value = SESSION.get(keyStorage);
         showBottomPane.value = SESSION.get('showRightSideBottomPane') ?? false;
+        showRightPanel.value = SESSION.get('showRightPanel') ?? true;
         lastSelectedBottomMenu.value = SESSION.get('lastSelectedBottomMenu') ?? null;
         if (value) rightSidePaneSplitStartUpValue.value = value;
     });
 
     watch(
-        () => [showBottomPane.value, lastSelectedBottomMenu.value],
-        ([showBottom, lastSelected]) => {
+        () => [showBottomPane.value, showRightPanel.value, lastSelectedBottomMenu.value],
+        ([showBottom, showRightPanelValue, lastSelected]) => {
             SESSION.set('showRightSideBottomPane', showBottom);
+            SESSION.set('showRightPanel', showRightPanelValue);
             SESSION.set('lastSelectedBottomMenu', lastSelected);
         }
     );
@@ -38,6 +41,7 @@ export default defineStore('useRightSideStore', () => {
     return {
         lastSelectedBottomMenu,
         showBottomPane,
+        showRightPanel,
         resizingPaneRightSide,
         rightSidePaneSplitStartUpValue,
     };

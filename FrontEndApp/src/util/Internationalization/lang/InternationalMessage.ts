@@ -180,6 +180,7 @@ export interface InternationalMessageInterface {
     clear: string;
     'hide-notes': string;
     'show-notes': string;
+    'hide-right-panel': string;
     'Clear Highlight': string;
     'dictionary': string;
     'references': string;

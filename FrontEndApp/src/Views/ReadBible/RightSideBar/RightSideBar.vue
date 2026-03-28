@@ -14,15 +14,31 @@ import BottomContents from './BottomContents/BottomContents.vue';
 
 const themeStore = useThemeStore();
 const SavedRightSideBar = 'saved-right-side-bar-menu-key';
-const selectedButton = ref<string>('bible-search');
+const fallbackRightSideBarMenu = 'bible-bookmarks';
+const hiddenRightSideBarMenu = 'bible-none';
+const selectedButton = ref<string>(fallbackRightSideBarMenu);
 const rightSideStore = useRightSideStore();
 
 function selectRightSideBarMenu(key: string) {
+    if (key === hiddenRightSideBarMenu) {
+        selectedButton.value = key;
+        rightSideStore.showRightPanel = false;
+        rightSideStore.showBottomPane = false;
+        rightSideStore.lastSelectedBottomMenu = null;
+        return;
+    }
+
     selectedButton.value = key;
+    rightSideStore.showRightPanel = true;
     SESSION.set(SavedRightSideBar, key);
 }
 
 function selectRightSideBarBottomMenu(key: string) {
+    if (!rightSideStore.showRightPanel) {
+        rightSideStore.showRightPanel = true;
+        selectedButton.value = SESSION.get(SavedRightSideBar) ?? fallbackRightSideBarMenu;
+    }
+
     if (rightSideStore.lastSelectedBottomMenu == key) {
         rightSideStore.lastSelectedBottomMenu = null;
         rightSideStore.showBottomPane = false;
@@ -35,8 +51,9 @@ function selectRightSideBarBottomMenu(key: string) {
 
 onBeforeMount(() => {
     const saveMenuKey = SESSION.get(SavedRightSideBar);
-    if (saveMenuKey) selectedButton.value = saveMenuKey;
-    else selectRightSideBarMenu('bible-bookmarks');
+    if (!rightSideStore.showRightPanel) selectedButton.value = hiddenRightSideBarMenu;
+    else if (saveMenuKey) selectedButton.value = saveMenuKey;
+    else selectRightSideBarMenu(fallbackRightSideBarMenu);
 
     window.message = useMessage();
 });
@@ -44,10 +61,11 @@ onBeforeMount(() => {
 <template>
     <div class="h-full w-full flex">
         <Splitpanes
+            v-if="rightSideStore.showRightPanel"
             @resized="rightSideStore.resizingPaneRightSide"
             horizontal
             :dbl-click-splitter="false"
-            class="splitpanes_show_bar w-[calc(100%-40px)] h-full"
+            class="splitpanes_show_bar flex-1 h-full"
             :class="{ 'splitter-hidden': !rightSideStore.showBottomPane }"
         >
             <Pane
@@ -79,6 +97,7 @@ onBeforeMount(() => {
                 </div>
             </Pane>
         </Splitpanes>
+        <div v-else class="flex-1 h-full"></div>
         <div
             class="w-40px min-w-40px bg-gray-100 dark:bg-dark-800 pt-3 text-size-20px flex flex-col justify-between items-center pb-3 read-bible-right-toolbar"
         >
@@ -108,6 +127,7 @@ onBeforeMount(() => {
                         quaternary
                         :class="{
                             '!bg-[var(--primary-color)] hover:!bg-[var(--primary-color)]':
+                                rightSideStore.showRightPanel &&
                                 rightSideStore.lastSelectedBottomMenu == menu.key,
                             'h-75px': menu.key === 'dictionary',
                             'h-27px': menu.key !== 'dictionary',

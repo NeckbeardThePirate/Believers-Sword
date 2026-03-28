@@ -181,6 +181,7 @@ const message: InternationalMessageType = {
     clear: 'clear',
     'hide-notes': 'Hide Notes',
     'show-notes': 'Show Notes',
+    'hide-right-panel': 'Hide Right Panel',
     'Clear Highlight': 'Clear Highlight',
     'dictionary': 'dictionary',
     'references': 'references',

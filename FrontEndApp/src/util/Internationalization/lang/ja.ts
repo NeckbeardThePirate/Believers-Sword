@@ -181,6 +181,7 @@ const message: InternationalMessageType = {
     clear: 'クリア',
     'hide-notes': 'ノートを非表示',
     'show-notes': 'ノートを表示',
+    'hide-right-panel': '右パネルを隠す',
     "Clear Highlight": 'ハイライトをクリアする',
     'dictionary': '辞書',
     'references': '参考文献',
