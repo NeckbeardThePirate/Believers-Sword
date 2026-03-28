@@ -14,6 +14,29 @@ import { clearBibleVersionCache } from './Modules/Bible/Common/BibleVersionCache
 // Check if running in portable mode
 setupPortableMode();
 
+function setupMainProcessLogging() {
+    const hasWritableConsole =
+        process.stdout &&
+        process.stderr &&
+        !process.stdout.destroyed &&
+        !process.stderr.destroyed &&
+        process.stdout.writable &&
+        process.stderr.writable;
+
+    if (!hasWritableConsole) {
+        Log.transports.console.level = false;
+    }
+
+    const ignoreBrokenPipe = (error: NodeJS.ErrnoException) => {
+        if (error?.code === 'EPIPE') return;
+    };
+
+    process.stdout?.on?.('error', ignoreBrokenPipe);
+    process.stderr?.on?.('error', ignoreBrokenPipe);
+}
+
+setupMainProcessLogging();
+
 async function createWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
     const appBounds: any = appConfig.get('setting.appBounds');

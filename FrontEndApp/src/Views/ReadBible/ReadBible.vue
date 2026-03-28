@@ -8,10 +8,13 @@ import ViewVerses from './ViewVerses/ViewVerses.vue';
 import Editor from '../../components/Editor/Editor.vue';
 import TakeNote from './TakeNote/TakeNote.vue';
 import useNoteStore from '../../store/useNoteStore';
+import useRightSideStore from '../../store/useRightSideStore';
 
 const storageReadBibleSavedSplitPaneSizes = 'storageReadBibleSavedSplitPaneSizes';
 const storageViewVerseSplitPaneSizes = 'storageViewVerseSplitPaneSizes';
+const hiddenRightPaneSize = 0;
 const noteStore = useNoteStore();
+const rightSideStore = useRightSideStore();
 
 const splitPaneSizes = ref<Array<{ min: number; max: number; size: number }>>([
     { min: 15, max: 30, size: 20 },
@@ -25,6 +28,11 @@ const verseViewPaneSizes = ref<Array<{ min: number; max: number; size: number }>
 ]);
 
 function changeSize(sizes: Array<any>) {
+    if (!rightSideStore.showRightPanel || sizes[2].size <= hiddenRightPaneSize) {
+        return;
+    }
+
+    splitPaneSizes.value = sizes;
     SESSION.set(storageReadBibleSavedSplitPaneSizes, sizes);
 }
 
@@ -87,9 +95,10 @@ onBeforeMount(() => {
         </Pane>
         <Pane
             class="bg-gray-100 dark:bg-dark-600 h-full read-bible-right-panel"
-            :size="splitPaneSizes[2].size"
-            :min-size="splitPaneSizes[2].min"
-            :max-size="splitPaneSizes[2].max"
+            :class="{ 'read-bible-right-panel-collapsed': !rightSideStore.showRightPanel }"
+            :size="rightSideStore.showRightPanel ? splitPaneSizes[2].size : hiddenRightPaneSize"
+            :min-size="rightSideStore.showRightPanel ? splitPaneSizes[2].min : hiddenRightPaneSize"
+            :max-size="rightSideStore.showRightPanel ? splitPaneSizes[2].max : hiddenRightPaneSize"
         >
             <RightSideBar />
         </Pane>
@@ -105,5 +114,12 @@ onBeforeMount(() => {
 .take-note-fade.take-note-show {
     opacity: 1;
     transition: opacity 0.3s ease-in-out 0.1s;
+}
+
+:deep(.read-bible-right-panel.read-bible-right-panel-collapsed) {
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
 }
 </style>

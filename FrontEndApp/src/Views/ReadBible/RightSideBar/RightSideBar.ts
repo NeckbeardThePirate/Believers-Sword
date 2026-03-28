@@ -3,10 +3,12 @@ import {
     Bookmark24Filled,
     Highlight24Filled,
     Attach24Filled,
+    Eye24Filled,
     NotebookSubsection24Regular,
     Bookmark24Regular,
     Highlight24Regular,
     Attach24Regular,
+    Eye24Regular,
     BookLetter24Regular,
     BookLetter24Filled,
 } from '@vicons/fluent';
@@ -20,6 +22,12 @@ type RightSideBarMenu = {
 };
 
 export const rightSideBarMenus: RightSideBarMenu[] = [
+    {
+        title: 'hide-right-panel',
+        key: 'bible-none',
+        icon: Eye24Regular,
+        iconDark: Eye24Filled,
+    },
     {
         title: 'Bible Versions',
         key: 'bible-lists',
@@ -58,6 +66,6 @@ export const rightSideBarBottomMenu: RightSideBarMenu[] = [
         key: 'references',
         icon: BookLetter24Regular,
         iconDark: BookLetter24Filled,
-        show: false
-    }
+        show: false,
+    },
 ];
