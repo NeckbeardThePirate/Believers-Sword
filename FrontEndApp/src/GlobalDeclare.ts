@@ -25,6 +25,11 @@ declare global {
             minimizeWindow: () => Promise<void>;
             getAppScale: () => Promise<number>;
             setAppScale: (scale: number) => Promise<number>;
+            getWindowBounds: () => Promise<{ x: number; y: number; width: number; height: number }>;
+            setWindowPosition: (
+                x: number,
+                y: number
+            ) => Promise<{ x: number; y: number; width: number; height: number }>;
             getAvailableBibles: () => Promise<Array<any>>;
             getVerses: (args: string) => Promise<Array<any>>;
             getVersesCount: (args: string) => Promise<number>;
@@ -123,6 +128,12 @@ declare global {
             updateDownloadProgress: (progress: { percentage: Function; done: Function }) => void;
 
             openDonateWindow: () => void;
+            openChapterPopout: (payload: {
+                bookNumber: number;
+                chapter: number;
+                title: string;
+                versions: string[];
+            }) => Promise<void>;
 
             /**
              * Space Studies Events

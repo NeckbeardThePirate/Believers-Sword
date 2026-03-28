@@ -25,6 +25,8 @@ import AboutModal from './components/About/AboutModal.vue';
 import SettingsModal from './components/Settings/SettingsModal.vue';
 import { useAuthStore } from './store/authStore';
 import SelectStudySpaceModal from './components/StudySpace/SelectStudySpaceModal.vue';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 
 const isMounted = ref(false);
 const authStore = useAuthStore();
@@ -35,6 +37,8 @@ const isSideBarCollapse = ref(true);
 const savedLocaleKey = 'saveLanguageStorageKey';
 const { locale } = useI18n();
 useMainStore();
+const route = useRoute();
+const isStandaloneRoute = computed(() => route.meta.standalone === true);
 
 function triggerSideBarCollapse(collapse: boolean) {
     isSideBarCollapse.value = collapse;
@@ -65,88 +69,91 @@ onMounted(async () => {
         <NDialogProvider>
             <NNotificationProvider>
                 <NMessageProvider>
-                    <NLayout class="h-[100vh] opacity-0 transition-all transform scale-50" :class="{'!opacity-100 !scale-100': isMounted}">
-                        <TitleBar class="h-[var(--header-height)]" />
-                        <NLayout class="h-[calc(100%-(var(--header-height)+var(--footer-height)))]" has-sider>
-                            <NLayoutSider
-                                bordered
-                                :collapsed="isSideBarCollapse"
-                                show-trigger="bar"
-                                collapse-mode="width"
-                                :collapsed-width="50"
-                                :width="180"
-                                :native-scrollbar="false"
-                                :inverted="false"
-                                :default-collapsed="true"
-                                class="side-bar-menu h-full"
-                                :on-update:collapsed="triggerSideBarCollapse"
-                            >
-                                <div class="flex flex-col justify-between h-full">
-                                    <NMenu
-                                        :value="menuStore.menuSelected"
-                                        :on-update:value="(key: string, item: MenuOption) => {
-                                        menuStore.setMenu(key);
-                                    }"
-                                        :inverted="false"
-                                        :collapsed-icon-size="20"
-                                        :indent="15"
-                                        :options="
-                                            menuStore.menuUpperTabs
-                                                .filter((item) =>
-                                                    menuStore.enableTab.includes(item.key)
-                                                )
-                                                .map((item) => ({
-                                                    label: $t(item.label),
-                                                    key: item.key,
-                                                    icon: themeStore.isDark
-                                                        ? item.iconDark
-                                                        : item.icon,
-                                                }))
-                                        "
-                                    />
-                                    <NMenu
-                                        :value="menuStore.menuSelected"
-                                        :on-update:value="
-                                        (key: string, item: MenuOption) => {
+                    <RouterView v-if="isStandaloneRoute" />
+                    <template v-else>
+                        <NLayout class="h-[100vh] opacity-0 transition-all transform scale-50" :class="{'!opacity-100 !scale-100': isMounted}">
+                            <TitleBar class="h-[var(--header-height)]" />
+                            <NLayout class="h-[calc(100%-(var(--header-height)+var(--footer-height)))]" has-sider>
+                                <NLayoutSider
+                                    bordered
+                                    :collapsed="isSideBarCollapse"
+                                    show-trigger="bar"
+                                    collapse-mode="width"
+                                    :collapsed-width="50"
+                                    :width="180"
+                                    :native-scrollbar="false"
+                                    :inverted="false"
+                                    :default-collapsed="true"
+                                    class="side-bar-menu h-full"
+                                    :on-update:collapsed="triggerSideBarCollapse"
+                                >
+                                    <div class="flex flex-col justify-between h-full">
+                                        <NMenu
+                                            :value="menuStore.menuSelected"
+                                            :on-update:value="(key: string, item: MenuOption) => {
                                             menuStore.setMenu(key);
                                         }"
-                                        :inverted="false"
-                                        :collapsed-icon-size="20"
-                                        :indent="15"
-                                        :options="
-                                            menuStore.bottomMenuTabs.map((item) => ({
-                                                label: $t(item.label),
-                                                key: item.key,
-                                                icon: item.icon,
-                                            }))
+                                            :inverted="false"
+                                            :collapsed-icon-size="20"
+                                            :indent="15"
+                                            :options="
+                                                menuStore.menuUpperTabs
+                                                    .filter((item) =>
+                                                        menuStore.enableTab.includes(item.key)
+                                                    )
+                                                    .map((item) => ({
+                                                        label: $t(item.label),
+                                                        key: item.key,
+                                                        icon: themeStore.isDark
+                                                            ? item.iconDark
+                                                            : item.icon,
+                                                    }))
+                                            "
+                                        />
+                                        <NMenu
+                                            :value="menuStore.menuSelected"
+                                            :on-update:value="
+                                            (key: string, item: MenuOption) => {
+                                                menuStore.setMenu(key);
+                                            }"
+                                            :inverted="false"
+                                            :collapsed-icon-size="20"
+                                            :indent="15"
+                                            :options="
+                                                menuStore.bottomMenuTabs.map((item) => ({
+                                                    label: $t(item.label),
+                                                    key: item.key,
+                                                    icon: item.icon,
+                                                }))
+                                            "
+                                        />
+                                    </div>
+                                </NLayoutSider>
+                                <NLayout class="h-full">
+                                    <ReadBible
+                                        v-show="
+                                            menuStore.isRouter == false &&
+                                            menuStore.menuSelected == 'read-bible'
                                         "
                                     />
-                                </div>
-                            </NLayoutSider>
-                            <NLayout class="h-full">
-                                <ReadBible
-                                    v-show="
-                                        menuStore.isRouter == false &&
-                                        menuStore.menuSelected == 'read-bible'
-                                    "
-                                />
-                                <Sermons
-                                    v-show="
-                                        menuStore.isRouter == false &&
-                                        menuStore.menuSelected == 'sermons'
-                                    "
-                                />
-                                <div class="h-[100%]" v-show="menuStore.isRouter == true">
-                                    <RouterView />
-                                </div>
+                                    <Sermons
+                                        v-show="
+                                            menuStore.isRouter == false &&
+                                            menuStore.menuSelected == 'sermons'
+                                        "
+                                    />
+                                    <div class="h-[100%]" v-show="menuStore.isRouter == true">
+                                        <RouterView />
+                                    </div>
+                                </NLayout>
                             </NLayout>
+                            <FooterComponent class="h-[var(--footer-height)]" size="tiny" />
                         </NLayout>
-                        <FooterComponent class="h-[var(--footer-height)]" size="tiny" />
-                    </NLayout>
-                    <DownloadBible />
-                    <AboutModal />
-                    <SettingsModal />
-                    <SelectStudySpaceModal />
+                        <DownloadBible />
+                        <AboutModal />
+                        <SettingsModal />
+                        <SelectStudySpaceModal />
+                    </template>
                 </NMessageProvider>
             </NNotificationProvider>
         </NDialogProvider>

@@ -1,5 +1,5 @@
 import { appConfig } from "./../../ElectronStore/Configuration";
-import { app, BrowserWindow, ipcMain, screen } from "electron";
+import { app, BrowserWindow, ipcMain, IpcMainInvokeEvent, screen } from "electron";
 
 const MIN_SCALE = 0.75;
 const MAX_SCALE = 1.5;
@@ -60,13 +60,34 @@ const setAppScale = (win: BrowserWindow, scale: number): number => {
     return normalizedScale;
 };
 
+const getWindowBounds = (win: BrowserWindow) => {
+    return win.getBounds();
+};
+
+const setWindowPosition = (win: BrowserWindow, x: number, y: number) => {
+    const currentBounds = win.getBounds();
+    win.setPosition(Math.round(x), Math.round(y));
+    return {
+        ...currentBounds,
+        x: Math.round(x),
+        y: Math.round(y),
+    };
+};
+
 export const windowBrowserEvents = (win: BrowserWindow) => {
-    ipcMain.handle("minimizeWindow", () => minimizeWindow(win));
-    ipcMain.handle("maximizeWindow", () => maximizeWindow(win));
-    ipcMain.handle("closeWindow", () => closeWindow(win));
-    ipcMain.handle("isWindowBrowserMaximized", () => {
-        return win.isMaximized();
+    const getTargetWindow = (event: IpcMainInvokeEvent) =>
+        BrowserWindow.fromWebContents(event.sender) || win;
+
+    ipcMain.handle("minimizeWindow", (event) => minimizeWindow(getTargetWindow(event)));
+    ipcMain.handle("maximizeWindow", (event) => maximizeWindow(getTargetWindow(event)));
+    ipcMain.handle("closeWindow", (event) => closeWindow(getTargetWindow(event)));
+    ipcMain.handle("isWindowBrowserMaximized", (event) => {
+        return getTargetWindow(event).isMaximized();
     });
-    ipcMain.handle('getAppScale', () => getAppScale(win));
-    ipcMain.handle('setAppScale', (_event, scale: number) => setAppScale(win, scale));
+    ipcMain.handle('getAppScale', (event) => getAppScale(getTargetWindow(event)));
+    ipcMain.handle('setAppScale', (event, scale: number) => setAppScale(getTargetWindow(event), scale));
+    ipcMain.handle('getWindowBounds', (event) => getWindowBounds(getTargetWindow(event)));
+    ipcMain.handle('setWindowPosition', (event, x: number, y: number) =>
+        setWindowPosition(getTargetWindow(event), x, y)
+    );
 };

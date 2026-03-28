@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('browserWindow', {
     isWindowBrowserMaximized: () => ipcRenderer.invoke('isWindowBrowserMaximized'),
     getAppScale: () => ipcRenderer.invoke('getAppScale'),
     setAppScale: (scale: number) => ipcRenderer.invoke('setAppScale', scale),
+    getWindowBounds: () => ipcRenderer.invoke('getWindowBounds'),
+    setWindowPosition: (x: number, y: number) => ipcRenderer.invoke('setWindowPosition', x, y),
     versions: () => ipcRenderer.invoke('versions'),
     getAvailableBibles: () => ipcRenderer.invoke('availableBibles'),
     getVerses: (args: string) => ipcRenderer.invoke('getVerses', JSON.parse(args)),
@@ -66,6 +68,12 @@ contextBridge.exposeInMainWorld('browserWindow', {
 
     // WINDOW OPENERS
     openDonateWindow: () => ipcRenderer.invoke('open-donate-window'),
+    openChapterPopout: (payload: {
+        bookNumber: number;
+        chapter: number;
+        title: string;
+        versions: string[];
+    }) => ipcRenderer.invoke('open-chapter-popout', payload),
 
     // Space Study Events
     getSpaceStudyList: (args: any) => ipcRenderer.invoke('getSpaceStudyList', args),

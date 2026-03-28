@@ -6,10 +6,14 @@ export const useSettingStore = defineStore('settingStore', () => {
     const showDeuterocanonicalStorageKey = 'show-deuterocanonical';
     const appScaleStorageKey = 'app-scale';
     const verseReaderModeKey = 'verse-reader-mode';
+    const continuousVerseFlowKey = 'continuous-verse-flow';
+    const filterEsvMarkersKey = 'filter-esv-markers';
     const showDeuterocanonical = ref(false);
     const appScale = ref(1);
     const isLoadingScale = ref(false);
     const verseReaderMode = ref<string>('browser-tts');
+    const continuousVerseFlow = ref(false);
+    const filterEsvMarkers = ref(true);
 
     onMounted(() => {
         const showDeuterocanonicalStored = SESSION.get(showDeuterocanonicalStorageKey);
@@ -18,6 +22,9 @@ export const useSettingStore = defineStore('settingStore', () => {
 
         const savedVerseReaderMode = SESSION.get(verseReaderModeKey);
         if (savedVerseReaderMode) verseReaderMode.value = savedVerseReaderMode;
+
+        continuousVerseFlow.value = SESSION.get(continuousVerseFlowKey) ?? false;
+        filterEsvMarkers.value = SESSION.get(filterEsvMarkersKey) ?? true;
 
         const savedScale = Number(SESSION.get(appScaleStorageKey));
         const fallbackScale = Number.isFinite(savedScale) ? savedScale : 1;
@@ -73,9 +80,21 @@ export const useSettingStore = defineStore('settingStore', () => {
         (val) => SESSION.set(verseReaderModeKey, val)
     );
 
+    watch(
+        () => continuousVerseFlow.value,
+        (val) => SESSION.set(continuousVerseFlowKey, val)
+    );
+
+    watch(
+        () => filterEsvMarkers.value,
+        (val) => SESSION.set(filterEsvMarkersKey, val)
+    );
+
     return {
         showDeuterocanonical,
         appScale,
         verseReaderMode,
+        continuousVerseFlow,
+        filterEsvMarkers,
     };
 });

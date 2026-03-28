@@ -8,6 +8,7 @@ import { bibleBooks } from '../util/books';
 import { useSettingStore } from './settingStore';
 import { removeHighlight } from '../util/hilitor';
 import { getBibleService } from '../services/BibleService';
+import { filterBibleVerseText, isEsvVersion } from '../util/filterBibleVerseText';
 
 type BookInterface = {
     title: string;
@@ -47,7 +48,10 @@ export const useBibleStore = defineStore('useBibleStore', () => {
                 }`;
                 const highlight = (chapterHighlights.value as any)[key];
                 return {
-                    text: highlight ? highlight.content : ver.text,
+                    text: filterBibleVerseText(
+                        highlight ? highlight.content : ver.text,
+                        settingStore.filterEsvMarkers && isEsvVersion(ver.version)
+                    ),
                     version: ver.version,
                     key,
                 };

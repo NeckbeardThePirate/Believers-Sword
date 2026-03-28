@@ -181,6 +181,9 @@ export interface InternationalMessageInterface {
     'hide-notes': string;
     'show-notes': string;
     'hide-right-panel': string;
+    'continuous-flow': string;
+    'filter-esv-markers': string;
+    'open-chapter-popout': string;
     'Clear Highlight': string;
     'dictionary': string;
     'references': string;

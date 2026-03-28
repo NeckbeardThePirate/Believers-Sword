@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { onBeforeMount, onMounted, ref, watch, h } from 'vue';
+import { computed, onBeforeMount, onMounted, ref, watch, h } from 'vue';
 import { useBibleStore } from '../../../store/BibleStore';
-import { NButton, NIcon, NPopover, NSelect, NSlider, useDialog, useMessage } from 'naive-ui';
+import { NButton, NIcon, NPopover, NSelect, NSlider, NSwitch, useDialog, useMessage } from 'naive-ui';
 import { Attachment, BookmarkFilled, Copy, Delete, Edit } from '@vicons/carbon';
 import SESSION from '../../../util/session';
 import { useMouse } from '@vueuse/core';
@@ -27,6 +27,9 @@ const themeStore = useThemeStore();
 const noteStore = useNoteStore();
 const ttsStore = useTTSStore();
 const settingStore = useSettingStore();
+const hasEsvSelectedVersion = computed(() =>
+    bibleStore.selectedBibleVersions.some((version) => version.includes('English Standard Version'))
+);
 
 function playVerse(verseIndex: number, versionIndex: number) {
     switch (settingStore.verseReaderMode) {
@@ -94,6 +97,27 @@ function navigateChapter(action: 'next' | 'before') {
     bibleStore.selectChapter(
         action == 'next' ? bibleStore.selectedChapter + 1 : bibleStore.selectedChapter - 1
     );
+}
+
+function openChapterPopout() {
+    window.browserWindow.openChapterPopout({
+        bookNumber: bibleStore.selectedBookNumber,
+        chapter: bibleStore.selectedChapter,
+        title: `${bibleStore.selectedBook.title} ${bibleStore.selectedChapter}`,
+        versions: [...bibleStore.selectedBibleVersions],
+    });
+}
+
+function selectVerse(verse: any) {
+    bibleStore.selectVerse(verse.book_number, verse.chapter, verse.verse);
+}
+
+function isBookmarked(verse: any) {
+    return bookmarkStore.isBookmarkExists(`${verse.book_number}_${verse.chapter}_${verse.verse}`);
+}
+
+function getVerseVersion(verse: any, versionIndex: number) {
+    return verse.version[versionIndex];
 }
 
 function clickContextMenu(verse: Object) {
@@ -233,6 +257,17 @@ onMounted(() => {
                 <div class="w-100% max-w-250px">
                     <NSelect v-model:value="fontSelected" :options="fontStyles" size="small" />
                 </div>
+                <div class="flex items-center gap-2 whitespace-nowrap select-none">
+                    <NSwitch v-model:value="settingStore.continuousVerseFlow" size="small" />
+                    <span class="text-sm">{{ $t('continuous-flow') }}</span>
+                </div>
+                <div
+                    v-if="hasEsvSelectedVersion"
+                    class="flex items-center gap-2 whitespace-nowrap select-none"
+                >
+                    <NSwitch v-model:value="settingStore.filterEsvMarkers" size="small" />
+                    <span class="text-sm">{{ $t('filter-esv-markers') }}</span>
+                </div>
                 <VerseSelector circle>
                     <NIcon
                         size="25"
@@ -248,6 +283,17 @@ onMounted(() => {
                 >
                     <template #icon>
                         <NIcon :component="noteStore.showNote ? Note28Filled : Note24Regular" size="20" />
+                    </template>
+                </NButton>
+                <NButton
+                    size="small"
+                    quaternary
+                    circle
+                    :title="$t('open-chapter-popout')"
+                    @click="openChapterPopout"
+                >
+                    <template #icon>
+                        <Icon icon="mdi:open-in-new" style="font-size: 18px;" />
                     </template>
                 </NButton>
             </div>
@@ -271,7 +317,7 @@ onMounted(() => {
                     bibleStore.renderVerses[0].version &&
                     bibleStore.renderVerses[0].version.length <= 3
                 "
-                class="sticky top-0 flex w-full mx-auto gap-20 dark:bg-dark-400 bg-white z-9 py-2 read-bible-version-sticky"
+                class="sticky top-0 flex w-full mx-auto gap-20 dark:bg-dark-400 bg-white z-9 py-2 read-bible-version-sticky scripture-column"
             >
                 <div
                     v-for="version in bibleStore.renderVerses[0].version"
@@ -285,11 +331,193 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-            <div
-                v-for="(verse, verseIndex) in bibleStore.renderVerses"
-                :key="verse.verse"
-                class="flex flex-col w-full max-w-1200px mx-auto"
-            >
+            <template v-if="settingStore.continuousVerseFlow && bibleStore.renderVerses.length">
+                <div
+                    v-if="bibleStore.renderVerses[0].version && bibleStore.renderVerses[0].version.length <= 3"
+                    class="flex w-full mx-auto gap-20 px-10px scripture-column"
+                >
+                    <div
+                        v-for="(versionHeader, versionIndex) in bibleStore.renderVerses[0].version"
+                        :key="versionHeader.key"
+                        class="w-full min-w-0"
+                    >
+                        <div :style="`font-size:${fontSize}px`" class="continuous-flow-version-body">
+                            <template
+                                v-for="(verse, verseIndex) in bibleStore.renderVerses"
+                                :key="`flow-${versionHeader.key}-${verse.verse}`"
+                            >
+                                <span
+                                    class="continuous-flow-verse"
+                                    :class="{
+                                        'continuous-flow-selected':
+                                            verse.verse == bibleStore.selectedVerse,
+                                    }"
+                                    @click="selectVerse(verse)"
+                                >
+                                    <NIcon
+                                        v-if="isBookmarked(verse)"
+                                        size="14"
+                                        class="inline-flex align-middle mr-1 opacity-70"
+                                        title="This is Bookmarked"
+                                    >
+                                        <BookmarkFilled />
+                                    </NIcon>
+                                    <NIcon
+                                        v-if="
+                                            clipNoteRender(
+                                                `key_${verse.book_number}_${verse.chapter}_${verse.verse}`
+                                            )
+                                        "
+                                        size="14"
+                                        class="inline-flex align-middle mr-1 opacity-70"
+                                        title="Clip Note"
+                                    >
+                                        <Attachment />
+                                    </NIcon>
+                                    <span class="font-bold select-none italic the-verse-number mr-1">
+                                        {{ verse.verse }}.
+                                    </span>
+                                    <Icon
+                                        v-if="
+                                            ttsStore.activeVerseNumber === verse.verse &&
+                                            versionIndex === ttsStore.selectedVersionIndex
+                                        "
+                                        icon="mdi:account-voice"
+                                        :style="`font-size: ${fontSize}px; vertical-align: middle;`"
+                                        class="text-[var(--primary-color)] animate-pulse mr-1"
+                                        title="Reading this verse"
+                                    />
+                                    <NButton
+                                        v-else-if="ttsStore.activeVerseNumber !== verse.verse"
+                                        size="tiny"
+                                        quaternary
+                                        circle
+                                        class="continuous-flow-play-button"
+                                        title="Read from this verse"
+                                        @click.stop="playVerse(verseIndex, versionIndex as number)"
+                                    >
+                                        <Icon icon="mdi:play" :style="`font-size: ${fontSize - 3}px;`" />
+                                    </NButton>
+                                    <span
+                                        :data-bible-version="getVerseVersion(verse, versionIndex).version"
+                                        :data-book="verse.book_number"
+                                        :data-chapter="verse.chapter"
+                                        :data-key="getVerseVersion(verse, versionIndex).key"
+                                        :data-verse="verse.verse"
+                                        class="verse-select-text input-text-search continuous-flow-text"
+                                        spellcheck="false"
+                                        @contextmenu="
+                                            clickContextMenu({
+                                                ...verse,
+                                                key: getVerseVersion(verse, versionIndex).key,
+                                            })
+                                        "
+                                        v-html="getVerseVersion(verse, versionIndex).text"
+                                    ></span>
+                                    <span class="continuous-flow-space"> </span>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="flex flex-col w-full mx-auto gap-4 px-10px scripture-column">
+                    <div
+                        v-for="(versionHeader, versionIndex) in bibleStore.renderVerses[0].version"
+                        :key="versionHeader.key"
+                        class="min-w-0"
+                    >
+                        <div
+                            class="font-700 opacity-80 dark:opacity-80 mb-2 text-[var(--primary-color)] select-none"
+                            :style="`font-size: ${fontSize - 2}px`"
+                        >
+                            {{ versionHeader.version.replace('.SQLite3', '') }}
+                        </div>
+                        <div :style="`font-size:${fontSize}px`" class="continuous-flow-version-body">
+                            <template
+                                v-for="(verse, verseIndex) in bibleStore.renderVerses"
+                                :key="`flow-stacked-${versionHeader.key}-${verse.verse}`"
+                            >
+                                <span
+                                    class="continuous-flow-verse"
+                                    :class="{
+                                        'continuous-flow-selected':
+                                            verse.verse == bibleStore.selectedVerse,
+                                    }"
+                                    @click="selectVerse(verse)"
+                                >
+                                    <NIcon
+                                        v-if="isBookmarked(verse)"
+                                        size="14"
+                                        class="inline-flex align-middle mr-1 opacity-70"
+                                        title="This is Bookmarked"
+                                    >
+                                        <BookmarkFilled />
+                                    </NIcon>
+                                    <NIcon
+                                        v-if="
+                                            clipNoteRender(
+                                                `key_${verse.book_number}_${verse.chapter}_${verse.verse}`
+                                            )
+                                        "
+                                        size="14"
+                                        class="inline-flex align-middle mr-1 opacity-70"
+                                        title="Clip Note"
+                                    >
+                                        <Attachment />
+                                    </NIcon>
+                                    <span class="font-bold select-none italic the-verse-number mr-1">
+                                        {{ verse.verse }}.
+                                    </span>
+                                    <Icon
+                                        v-if="
+                                            ttsStore.activeVerseNumber === verse.verse &&
+                                            versionIndex === ttsStore.selectedVersionIndex
+                                        "
+                                        icon="mdi:account-voice"
+                                        :style="`font-size: ${fontSize}px; vertical-align: middle;`"
+                                        class="text-[var(--primary-color)] animate-pulse mr-1"
+                                        title="Reading this verse"
+                                    />
+                                    <NButton
+                                        v-else-if="ttsStore.activeVerseNumber !== verse.verse"
+                                        size="tiny"
+                                        quaternary
+                                        circle
+                                        class="continuous-flow-play-button"
+                                        title="Read from this verse"
+                                        @click.stop="playVerse(verseIndex, versionIndex as number)"
+                                    >
+                                        <Icon icon="mdi:play" :style="`font-size: ${fontSize - 3}px;`" />
+                                    </NButton>
+                                    <span
+                                        :data-bible-version="getVerseVersion(verse, versionIndex).version"
+                                        :data-book="verse.book_number"
+                                        :data-chapter="verse.chapter"
+                                        :data-key="getVerseVersion(verse, versionIndex).key"
+                                        :data-verse="verse.verse"
+                                        class="verse-select-text input-text-search continuous-flow-text"
+                                        spellcheck="false"
+                                        @contextmenu="
+                                            clickContextMenu({
+                                                ...verse,
+                                                key: getVerseVersion(verse, versionIndex).key,
+                                            })
+                                        "
+                                        v-html="getVerseVersion(verse, versionIndex).text"
+                                    ></span>
+                                    <span class="continuous-flow-space"> </span>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <template v-else>
+                <div
+                    v-for="(verse, verseIndex) in bibleStore.renderVerses"
+                    :key="verse.verse"
+                    class="flex flex-col w-full mx-auto scripture-column"
+                >
                 <div class="mx-10px">
                     <div
                         :id="verse.verse == bibleStore.selectedVerse ? 'the-selected-verse' : ''"
@@ -502,6 +730,7 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
+            </template>
         </div>
         <ContextMenu
             :data="contextMenuData"
